@@ -8,6 +8,7 @@ public class Instruction {
 	ArrayList<Register> registersNeeded;
 	int instructionNumber;
 	int numRegistersNeeded;
+	int maxLive;
 	
 	public Instruction(String opcode, String[] sources, String[] targets, int iNum, int nr) {
 		this.opcode = opcode;
@@ -23,8 +24,9 @@ public class Instruction {
 				|| (instruction == null) || instruction.isEmpty())) {
 			Instruction tmp = null;
 			tmp = parseInstruction(instruction);
-			Register.buildRegisterArray(tmp);
 			Allocator.block.add(tmp);
+			Register.buildRegisterArray(tmp);
+			Allocator.instructionNumber++;
 		}
 		return;
 	}
@@ -40,7 +42,7 @@ public class Instruction {
 			tg = out[3].substring(out[3].indexOf('>') + 2).split(", ");
 		else
 			tg = null;
-		int in = Allocator.instructionNumber++;
+		int in = Allocator.instructionNumber;
 		int nr = calculateNumRegistersNeeded(sc, tg);
 		return new Instruction(oc, sc, tg, in, nr);
 	}
@@ -109,29 +111,6 @@ public class Instruction {
 	return;
 }*/
 	
-	/*public void calculateRegistersNeeded2() {
-		int tmp = 0;
-		if (this.sources[0].contains("r")) {
-			tmp++;
-			if (this.sources.length == 2) {
-				if (this.sources[1].contains("r")) {
-					tmp++;
-				}
-			}
-		}
-		if (this.targets != null) {
-			if (this.targets[0].contains("r")) {
-				tmp++;
-			}
-			if (this.targets.length == 2) {
-				if (this.targets[1].contains("r")) {
-					tmp++;
-				}
-			}
-		}
-		return;
-	}*/
-	
 	public static int calculateNumRegistersNeeded(String[] sources, String[] targets) {
 		int tmp = 0;
 		if (sources[0].contains("r")) {
@@ -155,14 +134,21 @@ public class Instruction {
 		return tmp;
 	}
 	
-	public static void calculateMaxLive() {
-		for (int i = 0; i < Allocator.block.size(); i++) {
-			for (int j = 0; j < Allocator.blockRegisters.length; j++) {
-				if (Allocator.blockRegisters[j] != null) {
-					//if (Allocator.blockRegisters[j].liveRange[0])
+	public void calculateMaxLive() {
+//		int life = 0;
+		for (int j = 1; j < Allocator.blockRegisters.length; j++) {
+			if (Allocator.blockRegisters[j] != null) {
+				if (this.instructionNumber >= Allocator.blockRegisters[j].liveRange[0]
+					&& this.instructionNumber < Allocator.blockRegisters[j].liveRange[1]) {
+//					System.out.println("i: " + this.instructionNumber + ", j: " + j + ", LR: "
+//							+ Allocator.blockRegisters[j].liveRange[0] + ", "
+//							+ Allocator.blockRegisters[j].liveRange[1]);
+//					life++;
+					this.maxLive++;
 				}
 			}
 		}
+		System.out.println("instr: " + this.instructionNumber + ", this: " + this.maxLive);
 	return;
 	}
 	
@@ -181,6 +167,8 @@ public class Instruction {
 		}
 		System.out.print(", " + this.instructionNumber);
 		System.out.print(", " + this.numRegistersNeeded);
+		System.out.print(", " + this.registersNeeded.toString());
+		System.out.print(", " + this.maxLive);
 		System.out.println();
 		return;
 	}

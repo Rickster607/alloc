@@ -5,6 +5,7 @@ public class Register {
 	public int offset;
 	public boolean isAvailable;
 	public int firstUse;
+	public int nextUse;
 	public int lastUse;
 	public int frequency;
 	public int[] liveRange;
@@ -40,15 +41,10 @@ public class Register {
 	public static void buildRegisterArray(Instruction instruction) {
 		String[] tmp = null;
 		int rNum = 0;
-//		Instruction tmpInstr = null;
 		if (instruction.sources[0].contains("r")) {	
 			tmp = instruction.sources[0].split("r");
 			rNum = Integer.valueOf(tmp[1]);
 			addRegister(rNum);
-//			tmpInstr = Allocator.block.get(instruction.instructionNumber);
-//			if (!tmpInstr.registersNeeded.contains(Allocator.blockRegisters[rNum])) {
-//				tmpInstr.registersNeeded.add(Allocator.blockRegisters[rNum]);
-//			}
 		}
 		if (instruction.sources.length == 2) {
 			if (instruction.sources[1].contains("r")) {
@@ -76,13 +72,25 @@ public class Register {
 	}
 	
 	public static void addRegister(int rNum) {
+		Instruction tmpInstr = Allocator.block.get(Allocator.instructionNumber);
 		if (Allocator.blockRegisters[rNum] != null) {
+			int rIndex = tmpInstr.registersNeeded.indexOf(Allocator.blockRegisters[rNum]);
 			Allocator.blockRegisters[rNum].lastUse = Allocator.instructionNumber;
 			Allocator.blockRegisters[rNum].liveRange[1] = Allocator.instructionNumber;
 			Allocator.blockRegisters[rNum].frequency++;
+			Register tmpReg = Allocator.blockRegisters[rNum];
+			if (rIndex == -1) {
+				tmpInstr.registersNeeded.add(tmpReg);
+			}
+			else {
+				tmpInstr.registersNeeded.set(rIndex, tmpReg);
+			}
+//			Allocator.block.set(Allocator.instructionNumber, tmpInstr);
 		}
 		else {
 			Allocator.blockRegisters[rNum] = new Register(rNum, Allocator.instructionNumber);
+			tmpInstr.registersNeeded.add(Allocator.blockRegisters[rNum]);
+//			Allocator.block.set(Allocator.instructionNumber, tmpInstr);
 		}
 		return;
 	}
@@ -99,7 +107,6 @@ public class Register {
 				System.out.print(", {" + this.liveRange[0] + ", " + this.liveRange[1] + "}");
 			}
 		}
-		System.out.println();
 		return;
 	}
 	
@@ -110,6 +117,7 @@ public class Register {
 		for (int i = 0; i < Allocator.blockRegisters.length; i++) {
 			if (Allocator.blockRegisters[i] != null) {
 				Allocator.blockRegisters[i].printRegister();
+				System.out.println();
 			}
 		}
 	}

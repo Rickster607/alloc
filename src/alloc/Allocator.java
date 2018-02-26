@@ -23,7 +23,7 @@ public class Allocator {
 		if (tmpInstr.targets != null) {
 			if (tmpInstr.targets.length > 0) {				//need to change if more than one alloc pass
 				if (tmpInstr.targets[0].contains("r0")) {
-					System.out.println("found r0");
+//					System.out.println("found r0");
 					allocated.add(0, tmpInstr);
 					block.remove(0);
 					return;
@@ -118,12 +118,16 @@ public class Allocator {
 		block = new ArrayList<Instruction>();
 		blockRegisters = new Register[256];
 		parseBlock();
+		for (int i = 1; i < block.size(); i++) {
+			block.get(i).calculateMaxLive();
+		}
 		spilledRegisters = new ArrayList<Register>();
 		allocated = new ArrayList<Instruction>();
 		Instruction.printInstructionList();
 		System.out.println();
 		System.out.println();
 		Register.printRegisterList();
+		
 		//Instruction.formatInstructions();
 		//Instruction.printInstructionList();
 		//System.out.println("Size of block: " + block.size());
