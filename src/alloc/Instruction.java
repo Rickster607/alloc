@@ -23,6 +23,16 @@ public class Instruction {
 		this.numRegistersNeeded = nr;
 	}
 	
+	public Instruction(int n, String opcode, String[] sources, String[] targets) {
+		this.opcode = opcode;
+		this.sources = sources;
+		this.targets = targets;
+//		this.liveRegisters = new ArrayList<Register>();
+//		this.sourceRegisters = new ArrayList<Register>();
+//		this.targetRegisters = new ArrayList<Register>();
+		this.instructionNumber = n;
+	}
+	
 	public static void addInstruction(String instruction) {
 		if (!(instruction.startsWith("//") || instruction.startsWith("#")
 				|| (instruction == null) || instruction.isEmpty())) {
@@ -50,70 +60,6 @@ public class Instruction {
 		return new Instruction(oc, sc, tg, in, nr);
 	}
 	
-	/*public static void formatInstructions() {
-		for (int i = 0; i < Allocator.block.size(); i ++) {
-			Allocator.block.get(i).formatInstruction();
-		}
-		return;
-	}*/
-	
-	/*public void formatInstruction() {
-		String[] tmp = null;
-		if (this.sources[0].contains("r")) {	
-			tmp = this.sources[0].split("r");
-			this.sources[0] = tmp[1];
-		}
-		if (this.sources.length == 2) {
-			if (this.sources[1].contains("r")) {
-				tmp = this.sources[1].split("r");
-				this.sources[1] = tmp[1];
-			}
-		}
-		tmp = null;
-		if (this.targets != null) {
-			if (this.targets[0].contains("r")) {
-				tmp = this.targets[0].split("r");
-				this.targets[0]= tmp[1];
-			}
-			if (this.targets.length == 2) {
-				if (this.targets[1].contains("r")) {
-					tmp = this.targets[1].split("r");
-					this.targets[1] = tmp[1];
-				}
-			}
-		}
-		return;
-	}*/
-
-	/*public void calculateRegistersNeeded() {
-	String[] tmp = null;
-	int rNum = 0;
-	if (this.sources[0].contains("r")) {	
-		tmp = this.sources[0].split("r");
-		rNum = Integer.valueOf(tmp[1]);
-	}
-	if (this.sources.length == 2) {
-		if (this.sources[1].contains("r")) {
-			tmp = this.sources[1].split("r");
-			this.sources[1] = tmp[1];
-		}
-	}
-	tmp = null;
-	if (this.targets != null) {
-		if (this.targets[0].contains("r")) {
-			tmp = this.targets[0].split("r");
-			this.targets[0]= tmp[1];
-		}
-		if (this.targets.length == 2) {
-			if (this.targets[1].contains("r")) {
-				tmp = this.targets[1].split("r");
-				this.targets[1] = tmp[1];
-			}
-		}
-	}
-	return;
-}*/
-	
 	public static int calculateNumRegistersNeeded(String[] sources, String[] targets) {
 		int tmp = 0;
 		if (sources[0].contains("r")) {
@@ -137,25 +83,66 @@ public class Instruction {
 		return tmp;
 	}
 	
-	public void calculateMaxLive() {
-//		int life = 0;
-		for (int j = 1; j < Allocator.blockRegisters.length; j++) {
-			if (Allocator.blockRegisters[j] != null) {
-				if (this.instructionNumber >= Allocator.blockRegisters[j].liveRange[0]
-					&& this.instructionNumber < Allocator.blockRegisters[j].liveRange[1]) {
-//					System.out.println("i: " + this.instructionNumber + ", j: " + j + ", LR: "
-//							+ Allocator.blockRegisters[j].liveRange[0] + ", "
-//							+ Allocator.blockRegisters[j].liveRange[1]);
-//					life++;
-					this.liveRegisters.add(Allocator.blockRegisters[j]);
-					this.maxLive++;
+	public static void calculateMaxLive(ArrayList<Instruction> block) {
+		Allocator.MAX_LIVE = 0;
+		for (int i = 0; i < block.size(); i++) {
+			block.get(i).liveRegisters.clear();
+			block.get(i).maxLive = 0;
+			for (int j = 1; j < Allocator.blockRegisters.length; j++) {
+				if (Allocator.blockRegisters[j] != null) {
+					if (i >= Allocator.blockRegisters[j].liveRange[0]
+						&& i < Allocator.blockRegisters[j].liveRange[1]) {
+						block.get(i).liveRegisters.add(Allocator.blockRegisters[j]);
+						block.get(i).maxLive++;
+					}
 				}
 			}
+			if (block.get(i).maxLive > Allocator.MAX_LIVE) {
+				Allocator.MAX_LIVE = block.get(i).maxLive;
+			}
 		}
-		if (this.maxLive > Allocator.MAX_LIVE) {
-			Allocator.MAX_LIVE = this.maxLive;
+	return;
+	}
+
+	public static void calculateMaxLive(ArrayList<Instruction> block, int start) {
+		Allocator.MAX_LIVE = 0;
+		for (int i = start; i < block.size(); i++) {
+			block.get(i).liveRegisters.clear();
+			block.get(i).maxLive = 0;
+			for (int j = 1; j < Allocator.blockRegisters.length; j++) {
+				if (Allocator.blockRegisters[j] != null) {
+					if (i >= Allocator.blockRegisters[j].liveRange[0]
+						&& i < Allocator.blockRegisters[j].liveRange[1]) {
+						block.get(i).liveRegisters.add(Allocator.blockRegisters[j]);
+						block.get(i).maxLive++;
+					}
+				}
+			}
+			if (block.get(i).maxLive > Allocator.MAX_LIVE) {
+				Allocator.MAX_LIVE = block.get(i).maxLive;
+			}
 		}
-//		System.out.println("instr: " + this.instructionNumber + ", this: " + this.maxLive);
+	return;
+	}
+	
+	public static void calculateMaxLive(ArrayList<Instruction> block, Register[] rArr, int start) {
+		Allocator.MAX_LIVE = 0;
+		for (int i = start; i < block.size(); i++) {
+			block.get(i).liveRegisters.clear();
+			block.get(i).maxLive = 0;
+			for (int j = 1; j < rArr.length; j++) {
+				if (rArr[j] != null) {
+					if (i >= rArr[j].liveRange[0]
+						&& i < rArr[j].liveRange[1]) {
+						block.get(i).liveRegisters.add(rArr[j]);
+						block.get(i).maxLive++;
+					}
+				}
+			}
+			if (block.get(i).maxLive > Allocator.MAX_LIVE) {
+				Allocator.MAX_LIVE = block.get(i).maxLive;
+			}
+		}
 	return;
 	}
 	
@@ -174,18 +161,31 @@ public class Instruction {
 			}
 		}
 //		System.out.print(", #regs: " + this.numRegistersNeeded);
-		System.out.print(", maxLive: " + this.maxLive);
-		System.out.print(", live: " + this.liveRegisters.toString());
+		if (this.instructionNumber != -1) {
+			System.out.print(", maxLive: " + this.maxLive);
+		}
+		if (this.liveRegisters != null) {
+			System.out.print(", live: " + this.liveRegisters.toString());
+		}
 		System.out.println();
 		return;
 	}
 	
-	public static void printInstructionList() {
+	public static void printInstructionList(ArrayList<Instruction> block) {
 		System.out.println("Instruction list: ");
 		System.out.println();
 		System.out.println();
-		for (int i = 0; i < Allocator.block.size(); i++) {
-			Allocator.block.get(i).printInstruction();
+		for (int i = 0; i < block.size(); i++) {
+			block.get(i).printInstruction();
+		}
+	}
+	
+	public static void printInstructionList(ArrayList<Instruction> block, int n) {
+		System.out.println("Instruction list: ");
+		System.out.println();
+		System.out.println();
+		for (int i = 0; i < n; i++) {
+			block.get(i).printInstruction();
 		}
 	}
 	

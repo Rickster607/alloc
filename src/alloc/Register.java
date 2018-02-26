@@ -1,5 +1,7 @@
 package alloc;
 
+import java.util.ArrayList;
+
 public class Register {
 	public int registerNumber;
 	public int offset;
@@ -23,10 +25,23 @@ public class Register {
 		this.liveRange[1] = 0;
 	}
 	
+	public Register(Register r) {
+		this.registerNumber = r.registerNumber;
+		this.offset = r.offset;
+		this.isAvailable = r.isAvailable;
+		this.firstUse = r.firstUse;
+		this.lastUse = r.lastUse;
+		this.frequency = r.frequency;
+		this.liveRange = new int[2];
+		this.liveRange[0] = r.liveRange[0];
+		this.liveRange[1] = r.liveRange[1];
+		this.life = r.life;
+	}
+	
 	public Register(int regNum) {
 		this.registerNumber = regNum;
 		this.offset = (regNum * (-4));
-		this.isAvailable = true;
+//		this.isAvailable = true;
 	}
 	
 	public static int availableRegisters() {
@@ -88,6 +103,21 @@ public class Register {
 			Allocator.blockRegisters[rNum] = new Register(rNum, Allocator.instructionNumber);
 		}
 		return;
+	}
+	
+	public static String[] getString(ArrayList<Register> list) {
+		if (list != null) {
+			if (list.size() == 1) {
+				String[] tmp = {String.valueOf("r" + list.get(0).registerNumber)};
+				return tmp;
+			}
+			else if (list.size() == 2) {
+				String[] tmp = {String.valueOf("r" + list.get(0).registerNumber)
+						, String.valueOf("r" + list.get(1).registerNumber)};
+				return tmp;
+			}
+		}
+		return null;
 	}
 	
 	public void printRegister() {
