@@ -5,18 +5,20 @@ import java.io.*;
 
 @SuppressWarnings("unused")
 public class Allocator {
-	
+
+	public static int instructionNumber;
 	public static int numRegisters;
 	public static int registersRemaining;
+	public static int MAX_LIVE;
+	public static int feasibleRegisters = 2;
 	public static char allocatorType;
 	public static String filename;
-	public static Register[] physicalRegisters;
-	public static ArrayList<Register> spilledRegisters;
-	public static Register[] blockRegisters;	//do i need this??
 	public static ArrayList<Instruction> block;
 	public static ArrayList<Instruction> allocated;
-	public static int offset = -4;
-	public static int instructionNumber;
+	public static Register[] blockRegisters;
+	public static Register[] physicalRegisters;
+	public static ArrayList<Register> spilledRegisters;
+//	public static int offset = -4;				//I don't think I need this.
 	
 	public static void bottomUp() {
 		Instruction tmpInstr = block.get(0);
@@ -60,15 +62,30 @@ public class Allocator {
 	}
 	
 	public static void topDown() {
-		int MAX_LIVE;
-		
+		for (int i = 0; i < block.size(); i++) {
+			Instruction tmpInstr = block.get(i);
+			if (tmpInstr.maxLive > (numRegisters - feasibleRegisters)){
+				Register regToSpill = tmpInstr.liveRegisters.get(0);
+				if (tmpInstr.liveRegisters.size() > 1) {
+					for (int j = 1; j < tmpInstr.liveRegisters.size(); j++) {
+						if ((tmpInstr.liveRegisters.get(j).frequency < regToSpill.frequency)
+						|| ((tmpInstr.liveRegisters.get(j).frequency == regToSpill.frequency)
+						&& (tmpInstr.liveRegisters.get(j).life > regToSpill.life))){
+							regToSpill = tmpInstr.liveRegisters.get(j);
+						}
+					}
+				}
+				//spill reg
+				break;
+			}
+		}
 		return;
 	}
 	
-	/*public static void allocateRegister() {
+	public static void allocateRegister() {
 		
 		return;
-	}*/
+	}
 	
 	public static void parseBlock() {
 		File blockFile = new File(filename);
@@ -95,10 +112,10 @@ public class Allocator {
 		return;
 	}
 	
-	public static int nextOffset() {
+	/*public static int nextOffset() {
 		offset = offset - 4;
 		return offset;
-	}
+	}*/
 	
 	public static void main(String[] args) {
 		if (args.length != 3) {
@@ -112,9 +129,10 @@ public class Allocator {
 		allocatorType = args[1].toLowerCase().charAt(0);
 		filename = args[2];
 		physicalRegisters = new Register[numRegisters];
-		for (int i = 0; i < numRegisters; i++) {
+		//Probably going to be putting already allocated registers in here.
+		/*for (int i = 0; i < numRegisters; i++) {
 			physicalRegisters[i] = new Register(i + 1);
-		}
+		}*/
 		block = new ArrayList<Instruction>();
 		blockRegisters = new Register[256];
 		parseBlock();
@@ -142,6 +160,10 @@ public class Allocator {
 				simpleTopDown();
 				break;
 			case 't':
+				physicalRegisters[(numRegisters - 1)].isAvailable = false;
+				registersRemaining--;
+				physicalRegisters[(numRegisters - 2)].isAvailable = false;
+				registersRemaining--;
 				topDown();
 				break;
 			case 'o':

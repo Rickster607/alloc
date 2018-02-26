@@ -5,9 +5,10 @@ public class Register {
 	public int offset;
 	public boolean isAvailable;
 	public int firstUse;
-	public int nextUse;
+//	public int nextUse;			//do I need this?? Can I calc this??
 	public int lastUse;
 	public int frequency;
+	public int life;
 	public int[] liveRange;
 	
 	public Register(int regNum, int firstUse) {
@@ -45,12 +46,14 @@ public class Register {
 			tmp = instruction.sources[0].split("r");
 			rNum = Integer.valueOf(tmp[1]);
 			addRegister(rNum);
+			instruction.sourceRegisters.add(Allocator.blockRegisters[rNum]);
 		}
 		if (instruction.sources.length == 2) {
 			if (instruction.sources[1].contains("r")) {
 				tmp = instruction.sources[1].split("r");
 				rNum = Integer.valueOf(tmp[1]);
 				addRegister(rNum);
+				instruction.sourceRegisters.add(Allocator.blockRegisters[rNum]);
 			}
 		}
 		tmp = null;
@@ -59,12 +62,14 @@ public class Register {
 				tmp = instruction.targets[0].split("r");
 				rNum = Integer.valueOf(tmp[1]);
 				addRegister(rNum);
+				instruction.targetRegisters.add(Allocator.blockRegisters[rNum]);
 			}
 			if (instruction.targets.length == 2) {
 				if (instruction.targets[1].contains("r")) {
 					tmp = instruction.targets[1].split("r");
 					rNum = Integer.valueOf(tmp[1]);
 					addRegister(rNum);
+					instruction.targetRegisters.add(Allocator.blockRegisters[rNum]);
 				}
 			}
 		}
@@ -72,39 +77,29 @@ public class Register {
 	}
 	
 	public static void addRegister(int rNum) {
-		Instruction tmpInstr = Allocator.block.get(Allocator.instructionNumber);
 		if (Allocator.blockRegisters[rNum] != null) {
-			int rIndex = tmpInstr.registersNeeded.indexOf(Allocator.blockRegisters[rNum]);
 			Allocator.blockRegisters[rNum].lastUse = Allocator.instructionNumber;
 			Allocator.blockRegisters[rNum].liveRange[1] = Allocator.instructionNumber;
+			Allocator.blockRegisters[rNum].life = Allocator.blockRegisters[rNum].liveRange[1] -
+				Allocator.blockRegisters[rNum].liveRange[0];
 			Allocator.blockRegisters[rNum].frequency++;
-			Register tmpReg = Allocator.blockRegisters[rNum];
-			if (rIndex == -1) {
-				tmpInstr.registersNeeded.add(tmpReg);
-			}
-			else {
-				tmpInstr.registersNeeded.set(rIndex, tmpReg);
-			}
-//			Allocator.block.set(Allocator.instructionNumber, tmpInstr);
 		}
 		else {
 			Allocator.blockRegisters[rNum] = new Register(rNum, Allocator.instructionNumber);
-			tmpInstr.registersNeeded.add(Allocator.blockRegisters[rNum]);
-//			Allocator.block.set(Allocator.instructionNumber, tmpInstr);
 		}
 		return;
 	}
 	
 	public void printRegister() {
-		System.out.print(this.registerNumber);
-		System.out.print(", " + this.offset);
-		System.out.print(", " + this.isAvailable);
-		System.out.print(", " + this.firstUse);
-		System.out.print(", " + this.lastUse);
-		System.out.print(", " + this.frequency);
+		System.out.print("regNum: " + this.registerNumber);
+		System.out.print(", offset: " + this.offset);
+		System.out.print(", avail: " + this.isAvailable);
+		System.out.print(", first: " + this.firstUse);
+		System.out.print(", last: " + this.lastUse);
+		System.out.print(", freq: " + this.frequency);
 		if (this.liveRange != null) {
 			if (this.liveRange[0] != 0 && this.liveRange[1] != 0) {
-				System.out.print(", {" + this.liveRange[0] + ", " + this.liveRange[1] + "}");
+				System.out.print(", LR: {" + this.liveRange[0] + ", " + this.liveRange[1] + "}");
 			}
 		}
 		return;
@@ -122,16 +117,4 @@ public class Register {
 		}
 	}
 	
-	/*	
-	public void updateRegister() {
-		
-		return;
-	}
-	*/
-	/*
-	public static void GenerateRegisterArray() {
-		
-		return;
-	}
-	*/
 }

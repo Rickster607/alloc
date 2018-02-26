@@ -5,7 +5,9 @@ public class Instruction {
 	String opcode;
 	String[] sources;
 	String[] targets;
-	ArrayList<Register> registersNeeded;
+	ArrayList<Register> liveRegisters;
+	ArrayList<Register> sourceRegisters;
+	ArrayList<Register> targetRegisters;
 	int instructionNumber;
 	int numRegistersNeeded;
 	int maxLive;
@@ -14,7 +16,9 @@ public class Instruction {
 		this.opcode = opcode;
 		this.sources = sources;
 		this.targets = targets;
-		this.registersNeeded = new ArrayList<Register>();
+		this.liveRegisters = new ArrayList<Register>();
+		this.sourceRegisters = new ArrayList<Register>();
+		this.targetRegisters = new ArrayList<Register>();
 		this.instructionNumber = iNum;
 		this.numRegistersNeeded = nr;
 	}
@@ -22,8 +26,7 @@ public class Instruction {
 	public static void addInstruction(String instruction) {
 		if (!(instruction.startsWith("//") || instruction.startsWith("#")
 				|| (instruction == null) || instruction.isEmpty())) {
-			Instruction tmp = null;
-			tmp = parseInstruction(instruction);
+			Instruction tmp = parseInstruction(instruction);
 			Allocator.block.add(tmp);
 			Register.buildRegisterArray(tmp);
 			Allocator.instructionNumber++;
@@ -144,31 +147,35 @@ public class Instruction {
 //							+ Allocator.blockRegisters[j].liveRange[0] + ", "
 //							+ Allocator.blockRegisters[j].liveRange[1]);
 //					life++;
+					this.liveRegisters.add(Allocator.blockRegisters[j]);
 					this.maxLive++;
 				}
 			}
 		}
-		System.out.println("instr: " + this.instructionNumber + ", this: " + this.maxLive);
+		if (this.maxLive > Allocator.MAX_LIVE) {
+			Allocator.MAX_LIVE = this.maxLive;
+		}
+//		System.out.println("instr: " + this.instructionNumber + ", this: " + this.maxLive);
 	return;
 	}
 	
 	public void printInstruction() {
-		System.out.print(opcode);
-		System.out.print(", " + sources[0]);
+		System.out.print("instr#: " + this.instructionNumber);
+		System.out.print(", oc: " + opcode);
+		System.out.print(", srcs: " + sources[0]);
 		if (this.sources.length == 2)
 			System.out.print(", " + sources[1]);
 		if (this.targets != null) {
 			if (this.targets.length > 0) {
-				System.out.print(", " + targets[0]);
+				System.out.print(", tgts: " + targets[0]);
 				if (this.targets.length == 2) {
 					System.out.print(", " + targets[1]);
 				}
 			}
 		}
-		System.out.print(", " + this.instructionNumber);
-		System.out.print(", " + this.numRegistersNeeded);
-		System.out.print(", " + this.registersNeeded.toString());
-		System.out.print(", " + this.maxLive);
+//		System.out.print(", #regs: " + this.numRegistersNeeded);
+		System.out.print(", maxLive: " + this.maxLive);
+		System.out.print(", live: " + this.liveRegisters.toString());
 		System.out.println();
 		return;
 	}
