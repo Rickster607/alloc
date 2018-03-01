@@ -15,10 +15,9 @@ public class Allocator {
 	public static String filename;
 	public static ArrayList<Instruction> block;
 	public static ArrayList<Instruction> spilledBlock;
-	public static ArrayList<Instruction> finalSpilledBlock;
 	public static ArrayList<Instruction> allocated;
 	public static Register[] blockRegisters;
-	public static Register[] physicalRegisters;
+	public static ArrayList<Register> physicalRegisters;
 	public static ArrayList<Register> spilledRegisters;
 	
 	public static void bottomUp() {
@@ -63,18 +62,16 @@ public class Allocator {
 	}
 	
 	public static void topDown() {
+//		Instruction.printILOC(block);
+//		Instruction.printILOCtoFile(block);
 		determineSpilledRegsTD();
-//		Instruction.printInstructionList(spilledBlock);
-		System.out.println("spilled Regs: " + spilledRegisters.toString());
-		for (int i = 0; i < spilledRegisters.size(); i++) {
-			System.out.print("spilled Regs: " + spilledRegisters.get(i).registerNumber + ", ");
-		}
-		System.out.println();
 		spillRegisters();
-		System.out.println();
 		loadSpilledRegs();
-		System.out.println();
+//		Instruction.printInstructionList(spilledBlock);
+		allocateRegisters();
 		Instruction.printInstructionList(spilledBlock);
+//		Instruction.printILOC(spilledBlock);
+		Instruction.printILOCtoFile(spilledBlock);
 		return;
 	}
 	
@@ -100,32 +97,8 @@ public class Allocator {
 				}
 				spilledRegisters.add(blockRegisters[regToSpill.registerNumber]);
 				tmpArr[regToSpill.registerNumber] = null;
-				Instruction.calculateMaxLive(block, tmpArr, tmpInstr.instructionNumber);
-//				blockRegisters[regToSpill.registerNumber] = null;
-//				Instruction.calculateMaxLive(block, tmpInstr.instructionNumber);
-				
-				
-//				System.out.println("spilling #: " + tmpInstr.instructionNumber + ", reg#: "
-//						+ regToSpill.registerNumber);
-/*				int address = (1024 + regToSpill.offset);
-				String[] f = {String.valueOf(address)};
-				String[] f1 = {"f1"};
-				String[] f2 = {"f2"};
-				Instruction spill1 = new Instruction(-1, "loadI", f, f2);
-				Instruction spill2 = new Instruction(-1, "store", f1, f2);
-				tmpInstr.targets = f1;
-				tmpInstr.targetRegisters = null;
-				spilledBlock.add(tmpInstr);
-				spilledBlock.add(spill1);
-				spilledBlock.add(spill2);
-				blockRegisters[regToSpill.registerNumber] = null;
-//				Register tmp = new Register(regToSpill.registerNumber);
-				spilledRegisters.add(regToSpill);
-				Instruction.calculateMaxLive(block, tmpInstr.instructionNumber);
-*/			}
-//			else {
-//				spilledBlock.add(tmpInstr);
-//			}
+				Instruction.calculateMaxLive(block, tmpArr);
+			}
 		}
 		return;
 	}
@@ -144,7 +117,7 @@ public class Allocator {
 						Instruction spill1 = new Instruction(-1, "loadI", f, f2);
 						Instruction spill2 = new Instruction(-1, "store", f1, f2);
 						tmpInstr.targets = f1;
-						tmpInstr.targetRegisters = null;
+						tmpInstr.liveRegisters.remove(regToSpill);
 						spilledBlock.add(tmpInstr);
 						spilledBlock.add(spill1);
 						spilledBlock.add(spill2);
@@ -165,23 +138,36 @@ public class Allocator {
 				if (spilledBlock.get(j).instructionNumber < 0){
 					continue;
 				}
+				int address = (1024 + spilledRegisters.get(i).offset);
+				String[] f = {String.valueOf(address)};
+				String[] f1 = {"f1"};
+				String[] f2 = {"f2"};
+				Instruction load1 = new Instruction(-2, "loadI", f, f1);
+				Instruction load2 = new Instruction(-2, "load", f1, f1);
+				Instruction load3 = new Instruction(-3, "loadI", f, f2);
+				Instruction load4 = new Instruction(-3, "load", f2, f2);
 				if (spilledBlock.get(j).sourceRegisters != null) {
 					if (spilledBlock.get(j).sourceRegisters.contains(spilledRegisters.get(i))){
-						System.out.println("I found one!!!: "
-						+ spilledRegisters.get(i).registerNumber
-						+ ", i:" + spilledBlock.get(j).instructionNumber);
-						int address = (1024 + spilledRegisters.get(i).offset);
-						String[] f = {String.valueOf(address)};
-						String[] f1 = {"f1"};
-						Instruction load1 = new Instruction(-2, "loadI", f, f1);
-						Instruction load2 = new Instruction(-2, "load", f1, f1);
 						spilledBlock.get(j).sources[spilledBlock.get(j).sourceRegisters
-						                            .indexOf(spilledRegisters.get(i))] = "f1";
-						spilledBlock.add(j, load1);
+						                            .indexOf(spilledRegisters.get(i))] = "f2";
+						spilledBlock.get(j).sourceRegisters.remove(spilledRegisters.get(i));
+						spilledBlock.add(j, load3);
 						j++;
-						spilledBlock.add(j, load2);
+						spilledBlock.add(j, load4);
 						j++;
-						
+					}
+				}
+				if (spilledBlock.get(j).targetRegisters != null) {
+					if (spilledBlock.get(j).targetRegisters.contains(spilledRegisters.get(i))) {
+						if (spilledBlock.get(j).instructionNumber > spilledRegisters.get(i).liveRange[0]) {
+							spilledBlock.get(j).targets[spilledBlock.get(j).targetRegisters
+							                            .indexOf(spilledRegisters.get(i))] = "f1";
+							spilledBlock.get(j).targetRegisters.remove(spilledRegisters.get(i));
+							spilledBlock.add(j, load1);
+							j++;
+							spilledBlock.add(j, load2);
+							j++;
+						}
 					}
 				}
 			}
@@ -189,8 +175,59 @@ public class Allocator {
 		return;
 	}
 	
-	public static void allocateRegister() {
-		
+	public static void allocateRegisters() {
+		for (int i = 1; i < spilledBlock.size(); i++) {
+			Instruction tmp = spilledBlock.get(i);
+			String[] r4 = {"r254"};
+			String[] r5 = {"r255"};
+			if (tmp.targets != null) {
+				if (tmp.targetRegisters != null) {
+					if (!tmp.targetRegisters.isEmpty()) {
+						for (int j = 0; j < tmp.targetRegisters.size(); j++) {
+							if (!physicalRegisters.contains(tmp.targetRegisters.get(j))) {
+								physicalRegisters.add(tmp.targetRegisters.get(j));
+							}
+						}
+					}
+				}
+				if (tmp.targets[0].contains("f1")) {
+					tmp.targets = r4;
+				}
+				if (tmp.targets[0].contains("f2")) {
+					tmp.targets = r5;
+				}
+			}
+			if (tmp.sources != null){
+				if (tmp.sources.length == 2) {
+					if (tmp.sources[1].contains("f1")) {
+						tmp.sources[1] = r4[0];
+					}
+					if (tmp.sources[1].contains("f2")) {
+						tmp.sources[1] = r5[0];
+					}
+				}
+				if (tmp.sourceRegisters != null) {
+					if (!tmp.sourceRegisters.isEmpty()) {
+						for (int j = 0; j < tmp.sourceRegisters.size(); j++) {
+							if (!physicalRegisters.contains(tmp.sourceRegisters.get(j))) {
+								physicalRegisters.add(tmp.sourceRegisters.get(j));
+							}
+						}
+					}
+				}
+				if (tmp.sources[0].contains("f1")) {
+					tmp.sources[0] = r4[0];
+				}
+				if (tmp.sources[0].contains("f2")) {
+					tmp.sources[0] = r5[0];
+				}
+			}
+			for (int j = 0; j < physicalRegisters.size(); j++) {
+				if (physicalRegisters.get(j).liveRange[1] < i || physicalRegisters.get(j).liveRange[0] > i) {
+					physicalRegisters.remove(j);
+				}
+			}
+		}
 		return;
 	}
 	
@@ -230,19 +267,18 @@ public class Allocator {
 		registersRemaining = numRegisters;
 		allocatorType = args[1].toLowerCase().charAt(0);
 		filename = args[2];
-		physicalRegisters = new Register[numRegisters];
+		physicalRegisters = new ArrayList<Register>();
 		block = new ArrayList<Instruction>();
 		spilledBlock = new ArrayList<Instruction>();
-		finalSpilledBlock = new ArrayList<Instruction>();
 		blockRegisters = new Register[256];
 		parseBlock();
 		Instruction.calculateMaxLive(block);
 		spilledRegisters = new ArrayList<Register>();
 		allocated = new ArrayList<Instruction>();
-		Instruction.printInstructionList(block);
-		System.out.println();
-		System.out.println();
-		Register.printRegisterList();
+//		Instruction.printInstructionList(block);
+//		System.out.println();
+//		System.out.println();
+//		Register.printRegisterList();
 		
 		switch (allocatorType) {
 			case 'b':
@@ -255,9 +291,8 @@ public class Allocator {
 				break;
 			case 't':
 //				physicalRegisters[(numRegisters - 1)].isAvailable = false;
-//				registersRemaining--;
 //				physicalRegisters[(numRegisters - 2)].isAvailable = false;
-//				registersRemaining--;
+				registersRemaining = numRegisters - 2;
 				topDown();
 				break;
 			case 'o':
@@ -266,7 +301,6 @@ public class Allocator {
 				System.out.println("Error, please enter a valid allocator type.");
 				break;
 		}
-		System.out.println("finished");
 		return;
 	}
 }

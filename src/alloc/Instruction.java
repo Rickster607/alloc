@@ -1,4 +1,7 @@
 package alloc;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 
 public class Instruction {
@@ -86,6 +89,30 @@ public class Instruction {
 	public static void calculateMaxLive(ArrayList<Instruction> block) {
 		Allocator.MAX_LIVE = 0;
 		for (int i = 0; i < block.size(); i++) {
+			if (block.get(i).liveRegisters != null) {
+				block.get(i).liveRegisters.clear();
+				block.get(i).maxLive = 0;
+			
+			for (int j = 1; j < Allocator.blockRegisters.length; j++) {
+				if (Allocator.blockRegisters[j] != null) {
+					if (i >= Allocator.blockRegisters[j].liveRange[0]
+						&& i < Allocator.blockRegisters[j].liveRange[1]) {
+						block.get(i).liveRegisters.add(Allocator.blockRegisters[j]);
+						block.get(i).maxLive++;
+					}
+				}
+			}
+			if (block.get(i).maxLive > Allocator.MAX_LIVE) {
+				Allocator.MAX_LIVE = block.get(i).maxLive;
+			}
+			}
+		}
+	return;
+	}
+
+	public static void calculateMaxLive(ArrayList<Instruction> block, int start) {
+		Allocator.MAX_LIVE = 0;
+		for (int i = start; i < block.size(); i++) {
 			block.get(i).liveRegisters.clear();
 			block.get(i).maxLive = 0;
 			for (int j = 1; j < Allocator.blockRegisters.length; j++) {
@@ -103,17 +130,17 @@ public class Instruction {
 		}
 	return;
 	}
-
-	public static void calculateMaxLive(ArrayList<Instruction> block, int start) {
+	
+	public static void calculateMaxLive(ArrayList<Instruction> block, Register[] rArr) {
 		Allocator.MAX_LIVE = 0;
-		for (int i = start; i < block.size(); i++) {
+		for (int i = 0; i < block.size(); i++) {
 			block.get(i).liveRegisters.clear();
 			block.get(i).maxLive = 0;
-			for (int j = 1; j < Allocator.blockRegisters.length; j++) {
-				if (Allocator.blockRegisters[j] != null) {
-					if (i >= Allocator.blockRegisters[j].liveRange[0]
-						&& i < Allocator.blockRegisters[j].liveRange[1]) {
-						block.get(i).liveRegisters.add(Allocator.blockRegisters[j]);
+			for (int j = 1; j < rArr.length; j++) {
+				if (rArr[j] != null) {
+					if (i >= rArr[j].liveRange[0]
+						&& i < rArr[j].liveRange[1]) {
+						block.get(i).liveRegisters.add(rArr[j]);
 						block.get(i).maxLive++;
 					}
 				}
@@ -161,7 +188,7 @@ public class Instruction {
 			}
 		}
 //		System.out.print(", #regs: " + this.numRegistersNeeded);
-		if (this.instructionNumber != -1) {
+		if (this.instructionNumber > -1) {
 			System.out.print(", maxLive: " + this.maxLive);
 		}
 		if (this.liveRegisters != null) {
@@ -189,4 +216,48 @@ public class Instruction {
 		}
 	}
 	
+	public static void printILOC(ArrayList<Instruction> block) {
+		for (int i = 0; i < block.size(); i++) {
+			Instruction tmp = block.get(i);
+			System.out.print(tmp.opcode +  " " + tmp.sources[0]);
+			if (tmp.sources.length == 2) {
+				System.out.print(", " + tmp.sources[1]);
+			}
+			if (tmp.targets != null) {
+				System.out.print(" => " + tmp.targets[0]);
+				if (tmp.targets.length == 2) {
+					System.out.print(", " + tmp.targets[1]);
+				}
+			}
+			System.out.println();
+		}
+	}
+	
+	public static void printILOCtoFile(ArrayList<Instruction> block) {
+		PrintWriter writer;
+		try {
+			writer = new PrintWriter("output1.txt", "UTF-8");
+			for (int i = 0; i < block.size(); i++) {
+				Instruction tmp = block.get(i);
+				writer.print(tmp.opcode +  " " + tmp.sources[0]);
+				if (tmp.sources.length == 2) {
+					writer.print(", " + tmp.sources[1]);
+				}
+				if (tmp.targets != null) {
+					writer.print(" => " + tmp.targets[0]);
+					if (tmp.targets.length == 2) {
+						writer.print(", " + tmp.targets[1]);
+					}
+				}
+				writer.println();
+			}
+			writer.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 }

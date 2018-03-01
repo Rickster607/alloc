@@ -12,6 +12,7 @@ public class Register {
 	public int frequency;
 	public int life;
 	public int[] liveRange;
+	Register allocated;
 	
 	public Register(int regNum, int firstUse) {
 		this.registerNumber = regNum;
@@ -41,10 +42,20 @@ public class Register {
 	public Register(int regNum) {
 		this.registerNumber = regNum;
 		this.offset = (regNum * (-4));
-//		this.isAvailable = true;
+		this.isAvailable = true;
 	}
 	
-	public static int availableRegisters() {
+	public Register(int regNum, Boolean physical) {
+		this.registerNumber = regNum;
+		this.isAvailable = true;
+		this.allocated = new Register(-1);
+	}
+	
+	/*public void store(int n) {
+		Allocator.physicalRegisters[n].allocated = this;
+	}*/
+	
+	/*public static int availableRegisters() {
 		int tmp = 0;
 		for (int i = 0; i < Allocator.numRegisters; i++) {
 			if (Allocator.physicalRegisters[i].isAvailable) {
@@ -52,7 +63,7 @@ public class Register {
 			}
 		}
 		return tmp;
-	}
+	}*/
 	
 	public static void buildRegisterArray(Instruction instruction) {
 		String[] tmp = null;
