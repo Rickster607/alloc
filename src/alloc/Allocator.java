@@ -275,10 +275,6 @@ public class Allocator {
 		Instruction.calculateMaxLive(block);
 		spilledRegisters = new ArrayList<Register>();
 		allocated = new ArrayList<Instruction>();
-//		Instruction.printInstructionList(block);
-//		System.out.println();
-//		System.out.println();
-//		Register.printRegisterList();
 		
 		switch (allocatorType) {
 			case 'b':
@@ -290,8 +286,6 @@ public class Allocator {
 				simpleTopDown();
 				break;
 			case 't':
-//				physicalRegisters[(numRegisters - 1)].isAvailable = false;
-//				physicalRegisters[(numRegisters - 2)].isAvailable = false;
 				registersRemaining = numRegisters - 2;
 				topDown();
 				break;
