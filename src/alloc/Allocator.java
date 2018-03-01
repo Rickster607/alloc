@@ -163,17 +163,14 @@ public class Allocator {
 							spilledBlock.add(j, load2);
 							j++;
 						}
-//						spilledBlock.get(j).sourceRegisters.remove(spilledRegisters.get(i));	//NEED TO FIX THIS
 					}
 				}
 				if (spilledBlock.get(j).targetRegisters != null) {
 					int index = spilledBlock.get(j).targetRegisters.indexOf(spilledRegisters.get(i));
 					if (spilledBlock.get(j).targetRegisters.contains(spilledRegisters.get(i))) {
 						if (spilledBlock.get(j).instructionNumber > spilledRegisters.get(i).liveRange[0]
-								&& (spilledBlock.get(j).opcode.contains("store")) 
-								){ //|| spilledBlock.get(j).opcode.contains("load")) {
+								&& (spilledBlock.get(j).opcode.contains("store"))){
 							spilledBlock.get(j).targets[index] = "f1";
-//							spilledBlock.get(j).targetRegisters.remove(spilledRegisters.get(i));
 							spilledBlock.add(j, load1);
 							j++;
 							spilledBlock.add(j, load2);
