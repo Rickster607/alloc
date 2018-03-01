@@ -21,16 +21,26 @@ public class Allocator {
 	public static ArrayList<Register> spilledRegisters;
 	
 	public static void bottomUp() {
-		Instruction tmpInstr = block.get(0);
-		if (tmpInstr.targets != null) {
-			if (tmpInstr.targets.length > 0) {				//need to change if more than one alloc pass
-				if (tmpInstr.targets[0].contains("r0")) {
-//					System.out.println("found r0");
-					allocated.add(0, tmpInstr);
-					block.remove(0);
-					return;
+		allocated.add(block.get(0));
+		for (int i = 0; i < block.size(); i++) {
+			Instruction tmpInstr = block.get(i);
+			tmpInstr.printInstruction();
+			if (physicalRegisters.size() + tmpInstr.targetRegisters.size() <= numRegisters) {
+				//allocate reg
+				if (tmpInstr.targetRegisters.size() != 0) {
+					physicalRegisters.add(tmpInstr.targetRegisters.get(0));
 				}
 			}
+			else {
+				int numToFree = 0;
+			}
+			//else (but always needs to happen - check for end of life
+			for (int j = 0; j < physicalRegisters.size(); j++) {
+				if (i >= physicalRegisters.get(j).liveRange[0]) {
+					
+				}
+			}
+			System.out.println("i: " + i + ", " + "physical: " + physicalRegisters.toString());
 		}
 //		//free registers to meet needs of next instruction
 //		for (int i = 0; i < numRegisters; i++) {
@@ -51,8 +61,7 @@ public class Allocator {
 		
 		
 		
-		allocated.add(0, tmpInstr);
-		block.remove(0);
+//		allocated.add(0, tmpInstr);
 		return;
 	}
 
@@ -295,9 +304,7 @@ public class Allocator {
 		
 		switch (allocatorType) {
 			case 'b':
-				while (block.size() > 0) {
-					bottomUp();
-				}
+				bottomUp();
 				break;
 			case 's':
 				simpleTopDown();
