@@ -69,7 +69,7 @@ public class Allocator {
 		loadSpilledRegs();
 //		Instruction.printInstructionList(spilledBlock);
 		allocateRegisters();
-		Instruction.printInstructionList(spilledBlock);
+//		Instruction.printInstructionList(spilledBlock);
 //		Instruction.printILOC(spilledBlock);
 		Instruction.printILOCtoFile(spilledBlock);
 		return;
@@ -147,22 +147,33 @@ public class Allocator {
 				Instruction load3 = new Instruction(-3, "loadI", f, f2);
 				Instruction load4 = new Instruction(-3, "load", f2, f2);
 				if (spilledBlock.get(j).sourceRegisters != null) {
+					int index = spilledBlock.get(j).sourceRegisters.indexOf(spilledRegisters.get(i));
 					if (spilledBlock.get(j).sourceRegisters.contains(spilledRegisters.get(i))){
-						spilledBlock.get(j).sources[spilledBlock.get(j).sourceRegisters
-						                            .indexOf(spilledRegisters.get(i))] = "f2";
-						spilledBlock.get(j).sourceRegisters.remove(spilledRegisters.get(i));
-						spilledBlock.add(j, load3);
-						j++;
-						spilledBlock.add(j, load4);
-						j++;
+						if (index == 0) {
+							spilledBlock.get(j).sources[0] = "f2";
+							spilledBlock.add(j, load3);
+							j++;
+							spilledBlock.add(j, load4);
+							j++;
+						}
+						if (index == 1) {
+							spilledBlock.get(j).sources[1] = "f1";
+							spilledBlock.add(j, load1);
+							j++;
+							spilledBlock.add(j, load2);
+							j++;
+						}
+//						spilledBlock.get(j).sourceRegisters.remove(spilledRegisters.get(i));	//NEED TO FIX THIS
 					}
 				}
 				if (spilledBlock.get(j).targetRegisters != null) {
+					int index = spilledBlock.get(j).targetRegisters.indexOf(spilledRegisters.get(i));
 					if (spilledBlock.get(j).targetRegisters.contains(spilledRegisters.get(i))) {
-						if (spilledBlock.get(j).instructionNumber > spilledRegisters.get(i).liveRange[0]) {
-							spilledBlock.get(j).targets[spilledBlock.get(j).targetRegisters
-							                            .indexOf(spilledRegisters.get(i))] = "f1";
-							spilledBlock.get(j).targetRegisters.remove(spilledRegisters.get(i));
+						if (spilledBlock.get(j).instructionNumber > spilledRegisters.get(i).liveRange[0]
+								&& (spilledBlock.get(j).opcode.contains("store")) 
+								){ //|| spilledBlock.get(j).opcode.contains("load")) {
+							spilledBlock.get(j).targets[index] = "f1";
+//							spilledBlock.get(j).targetRegisters.remove(spilledRegisters.get(i));
 							spilledBlock.add(j, load1);
 							j++;
 							spilledBlock.add(j, load2);
@@ -178,8 +189,13 @@ public class Allocator {
 	public static void allocateRegisters() {
 		for (int i = 1; i < spilledBlock.size(); i++) {
 			Instruction tmp = spilledBlock.get(i);
-			String[] r4 = {"r254"};
-			String[] r5 = {"r255"};
+			String ra = "r254";
+			String rb = "r255";
+			for (int j = 0; j < physicalRegisters.size(); j++) {
+				if (physicalRegisters.get(j).liveRange[1] < i || physicalRegisters.get(j).liveRange[0] > i) {
+					physicalRegisters.remove(j);
+				}
+			}
 			if (tmp.targets != null) {
 				if (tmp.targetRegisters != null) {
 					if (!tmp.targetRegisters.isEmpty()) {
@@ -191,21 +207,22 @@ public class Allocator {
 					}
 				}
 				if (tmp.targets[0].contains("f1")) {
-					tmp.targets = r4;
+					tmp.targets[0] = ra;
 				}
 				if (tmp.targets[0].contains("f2")) {
-					tmp.targets = r5;
+					tmp.targets[0] = rb;
+				}
+				if (tmp.targets.length == 2) {
+					System.out.println("why are we here");
+					if (tmp.targets[1].contains("f1")) {
+						tmp.targets[1] = ra;
+					}
+					if (tmp.targets[1].contains("f2")) {
+						tmp.targets[1] = rb;
+					}
 				}
 			}
 			if (tmp.sources != null){
-				if (tmp.sources.length == 2) {
-					if (tmp.sources[1].contains("f1")) {
-						tmp.sources[1] = r4[0];
-					}
-					if (tmp.sources[1].contains("f2")) {
-						tmp.sources[1] = r5[0];
-					}
-				}
 				if (tmp.sourceRegisters != null) {
 					if (!tmp.sourceRegisters.isEmpty()) {
 						for (int j = 0; j < tmp.sourceRegisters.size(); j++) {
@@ -216,15 +233,18 @@ public class Allocator {
 					}
 				}
 				if (tmp.sources[0].contains("f1")) {
-					tmp.sources[0] = r4[0];
+					tmp.sources[0] = ra;
 				}
 				if (tmp.sources[0].contains("f2")) {
-					tmp.sources[0] = r5[0];
+					tmp.sources[0] = rb;
 				}
-			}
-			for (int j = 0; j < physicalRegisters.size(); j++) {
-				if (physicalRegisters.get(j).liveRange[1] < i || physicalRegisters.get(j).liveRange[0] > i) {
-					physicalRegisters.remove(j);
+				if (tmp.sources.length == 2) {
+					if (tmp.sources[1].contains("f1")) {
+						tmp.sources[1] = ra;
+					}
+					if (tmp.sources[1].contains("f2")) {
+						tmp.sources[1] = rb;
+					}
 				}
 			}
 		}

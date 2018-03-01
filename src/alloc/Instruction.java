@@ -30,9 +30,13 @@ public class Instruction {
 		this.opcode = opcode;
 		this.sources = sources;
 		this.targets = targets;
-//		this.liveRegisters = new ArrayList<Register>();
-//		this.sourceRegisters = new ArrayList<Register>();
-//		this.targetRegisters = new ArrayList<Register>();
+		this.instructionNumber = n;
+	}
+	
+	public Instruction(int n, String opcode, ArrayList<Register> sources, String[] targets) {
+		this.opcode = opcode;
+		this.sourceRegisters = sources;
+		this.targets = targets;
 		this.instructionNumber = n;
 	}
 	

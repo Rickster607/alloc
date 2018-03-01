@@ -12,7 +12,6 @@ public class Register {
 	public int frequency;
 	public int life;
 	public int[] liveRange;
-	Register allocated;
 	
 	public Register(int regNum, int firstUse) {
 		this.registerNumber = regNum;
@@ -43,12 +42,6 @@ public class Register {
 		this.registerNumber = regNum;
 		this.offset = (regNum * (-4));
 		this.isAvailable = true;
-	}
-	
-	public Register(int regNum, Boolean physical) {
-		this.registerNumber = regNum;
-		this.isAvailable = true;
-		this.allocated = new Register(-1);
 	}
 	
 	/*public void store(int n) {
