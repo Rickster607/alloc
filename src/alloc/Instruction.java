@@ -191,6 +191,7 @@ public class Instruction {
 				}
 			}
 		}
+		System.out.print(", nr: " + this.numRegistersNeeded);
 		if (this.instructionNumber > -1) {
 			System.out.print(", maxLive: " + this.maxLive);
 		}

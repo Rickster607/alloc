@@ -2,7 +2,7 @@ package alloc;
 
 import java.util.ArrayList;
 
-public class Register {
+public class Register implements Comparable<Register>{
 	public int registerNumber;
 	public int offset;
 	public boolean isAvailable;
@@ -138,6 +138,10 @@ public class Register {
 	}
 	
 	public void addTo(Register[] rArr) {
+		if (this.isContainedIn(rArr)) {
+			System.out.println("ERROR: Already in rArr");
+			return;
+		}
 		for (int i = 0; i < rArr.length; i++) {
 			if (rArr[i] == null) {
 				rArr[i] = this;
@@ -186,6 +190,7 @@ public class Register {
 	
 	public void printThisRegister() {
 		System.out.print("regNum: " + this.registerNumber);
+		System.out.print(", freq: " + this.frequency);
 		if (this.liveRange != null) {
 			if (this.liveRange[0] != 0 && this.liveRange[1] != 0) {
 				System.out.print(", LR: {" + this.liveRange[0] + ", " + this.liveRange[1] + "}");
@@ -218,6 +223,11 @@ public class Register {
 				System.out.println();
 			}
 		}
+	}
+
+	@Override
+	public int compareTo(Register r) {
+		return r.frequency - this.frequency;
 	}
 	
 }
