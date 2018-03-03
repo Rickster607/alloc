@@ -17,30 +17,97 @@ public class Allocator {
 	public static ArrayList<Instruction> spilledBlock;
 	public static ArrayList<Instruction> allocated;
 	public static Register[] blockRegisters;
-	public static ArrayList<Register> physicalRegisters;
+	public static Register[] physicalRegisters;
 	public static ArrayList<Register> spilledRegisters;
+	public static ArrayList<Register> allocatedRegisters;
 	
+	//need to finish refactor of physicalRegisters (also make sure we're checking for null values (maybe method??))
 	public static void bottomUp() {
 		allocated.add(block.get(0));
-		for (int i = 0; i < block.size(); i++) {
+		//check for end of life
+		for (int i = 1; i < block.size(); i++) {
 			Instruction tmpInstr = block.get(i);
+			System.out.println();
 			tmpInstr.printInstruction();
-			if (physicalRegisters.size() + tmpInstr.targetRegisters.size() <= numRegisters) {
-				//allocate reg
-				if (tmpInstr.targetRegisters.size() != 0) {
-					physicalRegisters.add(tmpInstr.targetRegisters.get(0));
+//			System.out.println();
+			
+			//load proper registers whose live ranges have ended
+			for (int j = 0; j < allocatedRegisters.size(); j++) {
+				Register tmpReg = allocatedRegisters.get(j);
+				if (tmpInstr.sourceRegisters.contains(tmpReg)) {
+					String src = "r" + String.valueOf(tmpReg.physicalIndex(physicalRegisters) + 1);
+//					System.out.println("i: " + i + ", j: " + j + ", src: " + src + ", num: " + tmpReg.registerNumber);
+					tmpInstr.sources[tmpInstr.sourceRegisters.indexOf(tmpReg)] = src;
 				}
+				if (tmpInstr.opcode.contains("store") && tmpInstr.targetRegisters.contains(tmpReg)) {
+					String tgt = "r" + String.valueOf(tmpReg.physicalIndex(physicalRegisters) + 1);
+//					System.out.println("i: " + i + ", j: " + j + ", tgt: " + tgt + ", num: " + tmpReg.registerNumber);
+					tmpInstr.targets[0] = tgt;
+				}
+			}
+			//remove registers whose live ranges have ended
+			for (int j = 0; j < physicalRegisters.length; j++) {
+				if (physicalRegisters[j] != null) {
+					if (i >= physicalRegisters[j].liveRange[1]) {
+						System.out.println("Removing: " + physicalRegisters[j].registerNumber);
+						allocatedRegisters.remove(physicalRegisters[j]);
+						physicalRegisters[j] = null;
+					}
+				}
+			}
+			//determine number of registers available to allocate this pass (increment # if register is a target of store,
+				//in this case, it will be counted as a target register even though it's already been 
+			int numAvailableRegs = Register.numAvailable(physicalRegisters);
+			if (tmpInstr.opcode.contains("store")) {
+//				numAvailableRegs++;
 			}
 			else {
-				int numToFree = 0;
-			}
-			//else (but always needs to happen - check for end of life
-			for (int j = 0; j < physicalRegisters.size(); j++) {
-				if (i >= physicalRegisters.get(j).liveRange[0]) {
-					
+				for (int j = 0; j < tmpInstr.targetRegisters.size(); j++) {
+					if (tmpInstr.targetRegisters.get(j).isContainedIn(physicalRegisters)) {
+						numAvailableRegs++;
+					}
 				}
 			}
-			System.out.println("i: " + i + ", " + "physical: " + physicalRegisters.toString());
+			
+			if (numAvailableRegs - tmpInstr.targetRegisters.size() < 0) {
+				int numToFree = Register.numAvailable(physicalRegisters) + tmpInstr.targetRegisters.size();
+				System.out.println("We need to spill some registers, boys: " + numToFree);
+				//do stuff
+//				while (numToFree > 0) {
+					for (int j = 0; j < physicalRegisters.length; j++) {
+						if (physicalRegisters[j] != null) {
+							physicalRegisters[j].calculateNextUse(block, i);
+						}
+					}
+					
+					for (int j = 0; j < physicalRegisters.length; j++) {
+						
+					}
+//				}
+					
+			}
+			
+			else {
+				//allocate reg
+				if (tmpInstr.targetRegisters.size() != 0) {
+					for (int j = 0; j < tmpInstr.targetRegisters.size(); j++) {
+						if (j > 0) {
+							System.out.print("j: " + j + ", ");
+						}
+						if ((!tmpInstr.targetRegisters.get(j).isContainedIn(physicalRegisters)) && (!tmpInstr.opcode.contains("store"))) {
+							tmpInstr.targetRegisters.get(j).addTo(physicalRegisters);
+							allocatedRegisters.add(tmpInstr.targetRegisters.get(j));
+							String tgt = "r" + String.valueOf(tmpInstr.targetRegisters.get(j).physicalIndex(physicalRegisters) + 1);
+//							System.out.print("i: " + i + ", r: " + tmpInstr.targetRegisters.get(j).registerNumber
+//									+ ", String: " + tgt);
+							tmpInstr.targets[j] = tgt;
+//							System.out.println(", Targets: " + tgt);
+						}
+					}
+				}
+			}
+			Register.printThisRegList(physicalRegisters);
+			allocated.add(tmpInstr);
 		}
 //		//free registers to meet needs of next instruction
 //		for (int i = 0; i < numRegisters; i++) {
@@ -62,6 +129,9 @@ public class Allocator {
 		
 		
 //		allocated.add(0, tmpInstr);
+//		Instruction.printInstructionList(allocated);
+		Instruction.printILOC(allocated);
+		Instruction.printILOCtoFile(allocated);
 		return;
 	}
 
@@ -74,8 +144,8 @@ public class Allocator {
 //		Instruction.printILOC(block);
 //		Instruction.printILOCtoFile(block);
 		determineSpilledRegsTD();
-		spillRegisters();
-		loadSpilledRegs();
+		spillRegistersTD();
+		loadSpilledRegsTD();
 //		Instruction.printInstructionList(spilledBlock);
 		allocateRegisters();
 //		Instruction.printInstructionList(spilledBlock);
@@ -83,6 +153,19 @@ public class Allocator {
 		Instruction.printILOCtoFile(spilledBlock);
 		return;
 	}
+	
+	/*public static void loadSpilledRegsBU(ArrayList<Instruction> block, int start) {
+		for (int i = 0; i < spilledRegisters.size(); i++) {
+			Register tmpReg = spilledRegisters.get(i);
+			for (int j = start; j < block.size(); j++) {
+				Instruction tmpInstr = block.get(j);
+				if (true) {
+					
+				}
+			}
+		}
+		return;
+	}*/
 	
 	public static void determineSpilledRegsTD() {
 		Register[] tmpArr = new Register[256];
@@ -112,7 +195,7 @@ public class Allocator {
 		return;
 	}
 	
-	public static void spillRegisters() {
+	public static void spillRegistersTD() {
 		for (int j = 0; j < block.size(); j++) {
 			Instruction tmpInstr = block.get(j);
 			for (int i = 0; i < spilledRegisters.size(); i++) {
@@ -141,7 +224,7 @@ public class Allocator {
 		return;
 	}
 	
-	public static void loadSpilledRegs() {
+	public static void loadSpilledRegsTD() {
 		for (int i = 0; i < spilledRegisters.size(); i++) {
 			for (int j = 0; j < spilledBlock.size(); j++) {
 				if (spilledBlock.get(j).instructionNumber < 0){
@@ -197,21 +280,7 @@ public class Allocator {
 			Instruction tmp = spilledBlock.get(i);
 			String ra = "r254";
 			String rb = "r255";
-			for (int j = 0; j < physicalRegisters.size(); j++) {
-				if (physicalRegisters.get(j).liveRange[1] < i || physicalRegisters.get(j).liveRange[0] > i) {
-					physicalRegisters.remove(j);
-				}
-			}
 			if (tmp.targets != null) {
-				if (tmp.targetRegisters != null) {
-					if (!tmp.targetRegisters.isEmpty()) {
-						for (int j = 0; j < tmp.targetRegisters.size(); j++) {
-							if (!physicalRegisters.contains(tmp.targetRegisters.get(j))) {
-								physicalRegisters.add(tmp.targetRegisters.get(j));
-							}
-						}
-					}
-				}
 				if (tmp.targets[0].contains("f1")) {
 					tmp.targets[0] = ra;
 				}
@@ -229,15 +298,6 @@ public class Allocator {
 				}
 			}
 			if (tmp.sources != null){
-				if (tmp.sourceRegisters != null) {
-					if (!tmp.sourceRegisters.isEmpty()) {
-						for (int j = 0; j < tmp.sourceRegisters.size(); j++) {
-							if (!physicalRegisters.contains(tmp.sourceRegisters.get(j))) {
-								physicalRegisters.add(tmp.sourceRegisters.get(j));
-							}
-						}
-					}
-				}
 				if (tmp.sources[0].contains("f1")) {
 					tmp.sources[0] = ra;
 				}
@@ -293,13 +353,17 @@ public class Allocator {
 		registersRemaining = numRegisters;
 		allocatorType = args[1].toLowerCase().charAt(0);
 		filename = args[2];
-		physicalRegisters = new ArrayList<Register>();
+		physicalRegisters = new Register[numRegisters];
+		for (int i = 0; i < physicalRegisters.length; i++) {
+			physicalRegisters[i] = null;
+		}
 		block = new ArrayList<Instruction>();
 		spilledBlock = new ArrayList<Instruction>();
 		blockRegisters = new Register[256];
 		parseBlock();
 		Instruction.calculateMaxLive(block);
 		spilledRegisters = new ArrayList<Register>();
+		allocatedRegisters = new ArrayList<Register>();
 		allocated = new ArrayList<Instruction>();
 		
 		switch (allocatorType) {

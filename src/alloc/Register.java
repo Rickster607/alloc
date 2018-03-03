@@ -7,7 +7,7 @@ public class Register {
 	public int offset;
 	public boolean isAvailable;
 	public int firstUse;
-//	public int nextUse;			//do I need this?? Can I calc this??
+	public int nextUse;			//do I need this?? Can I calc this?? YES AND YES!
 	public int lastUse;
 	public int frequency;
 	public int life;
@@ -44,19 +44,24 @@ public class Register {
 		this.isAvailable = true;
 	}
 	
-	/*public void store(int n) {
-		Allocator.physicalRegisters[n].allocated = this;
-	}*/
-	
-	/*public static int availableRegisters() {
-		int tmp = 0;
-		for (int i = 0; i < Allocator.numRegisters; i++) {
-			if (Allocator.physicalRegisters[i].isAvailable) {
-				tmp++;
+	public void calculateNextUse(ArrayList<Instruction> block, int n) {
+		for (int i = n; i < block.size(); i++) {
+			if (block.get(i).sourceRegisters != null) {
+				if (block.get(i).sourceRegisters.contains(this)) {
+					this.nextUse = i;
+					return;
+				}
+			}
+			if (block.get(i).targetRegisters != null) {
+				if (block.get(i).targetRegisters.contains(this)) {
+					this.nextUse = i;
+					return;
+				}
 			}
 		}
-		return tmp;
-	}*/
+		this.nextUse = -1;
+		System.out.println("ERROR: no next use for register?!?!");
+	}
 	
 	public static void buildRegisterArray(Instruction instruction) {
 		String[] tmp = null;
@@ -108,6 +113,50 @@ public class Register {
 		}
 		return;
 	}
+
+	public int physicalIndex(Register[] rArr) {
+		for (int i = 0; i < rArr.length; i++) {
+			if (rArr[i] != null) {
+				if (rArr[i].equals(this)) {
+					return i;
+				}
+			}
+		}
+		System.out.println("REGISTER INDEX ERROR (THIS SHOULD NOT HAPPEN)");
+		return 0;
+	}
+	
+	public Boolean isContainedIn(Register[] rArr) {
+		for (int i = 0; i < rArr.length; i ++) {
+			if (rArr[i] != null) {
+				if (rArr[i].equals(this)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	public void addTo(Register[] rArr) {
+		for (int i = 0; i < rArr.length; i++) {
+			if (rArr[i] == null) {
+				rArr[i] = this;
+				return;
+			}
+		}
+		System.out.println("ERROR: Couldn't add to Register array... We shouldn't get here!");
+		return;
+	}
+	
+	public static int numAvailable (Register[] rArr) {
+		int count = 0;
+		for (int i = 0; i < rArr.length; i++) {
+			if (rArr[i] == null) {
+				count++;
+			}
+		}
+		return count;
+	}
 	
 	public static String[] getString(ArrayList<Register> list) {
 		if (list != null) {
@@ -122,6 +171,26 @@ public class Register {
 			}
 		}
 		return null;
+	}
+	
+	public static void printThisRegList(Register[] physicalRegisters) {
+		System.out.println("Register list: ");
+		for (int i = 0; i < physicalRegisters.length; i++) {
+			if (physicalRegisters[i] != null) {
+				System.out.print("i: " + (i + 1) + ", ");
+				physicalRegisters[i].printThisRegister();
+				System.out.println();
+			}
+		}
+	}
+	
+	public void printThisRegister() {
+		System.out.print("regNum: " + this.registerNumber);
+		if (this.liveRange != null) {
+			if (this.liveRange[0] != 0 && this.liveRange[1] != 0) {
+				System.out.print(", LR: {" + this.liveRange[0] + ", " + this.liveRange[1] + "}");
+			}
+		}
 	}
 	
 	public void printRegister() {
