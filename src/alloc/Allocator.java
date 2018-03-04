@@ -402,6 +402,7 @@ public class Allocator {
 		}
 	}
 	
+	
 	public static void allocateRegistersTD() {
 		for (int i = 1; i < spilledBlock.size(); i++) {
 			Instruction tmp = spilledBlock.get(i);
@@ -443,6 +444,7 @@ public class Allocator {
 		}
 		return;
 	}
+	
 	
 	public static void parseBlock() {
 		File blockFile = new File(filename);
@@ -502,21 +504,24 @@ public class Allocator {
 			case 'b':
 				bottomUp();
 				Instruction.printILOC(allocated);
-				Instruction.printILOCtoFile(allocated);
+//				Instruction.printILOCtoFile(allocated);
 				break;
 			case 's':
 				registersRemaining = numRegisters - 2;
 				simpleTopDown();
 				Instruction.printILOC(spilledBlock);
-				Instruction.printILOCtoFile(spilledBlock);
+//				Instruction.printILOCtoFile(spilledBlock);
 				break;
 			case 't':
 				registersRemaining = numRegisters - 2;
 				topDown();
 				Instruction.printILOC(spilledBlock);
-				Instruction.printILOCtoFile(spilledBlock);
+//				Instruction.printILOCtoFile(spilledBlock);
 				break;
 			case 'o':
+				topDown();
+				Instruction.printILOC(spilledBlock);
+//				Instruction.printILOCtoFile(spilledBlock);
 				break;
 			default:
 				System.out.println("Error, please enter a valid allocator type.");
