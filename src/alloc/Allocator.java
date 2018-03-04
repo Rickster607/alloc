@@ -159,7 +159,6 @@ public class Allocator {
 	}
 	
 	
-	//need to refactor spilling/loading to use physicalRegisters instead of f1/f2 254/255
 	public static void topDown() {
 		determineSpilledRegsTD();
 		spillRegistersTD();
