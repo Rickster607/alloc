@@ -188,6 +188,7 @@ public class Register implements Comparable<Register>{
 		}
 	}
 	
+	
 	public void printThisRegister() {
 		System.out.print("regNum: " + this.registerNumber);
 		System.out.print(", freq: " + this.frequency);
@@ -197,6 +198,7 @@ public class Register implements Comparable<Register>{
 			}
 		}
 	}
+	
 	
 	public void printRegister() {
 		System.out.print("regNum: " + this.registerNumber);
@@ -213,6 +215,7 @@ public class Register implements Comparable<Register>{
 		return;
 	}
 	
+	
 	public static void printRegisterList() {
 		System.out.println("Register list: ");
 		System.out.println();
@@ -225,6 +228,7 @@ public class Register implements Comparable<Register>{
 		}
 	}
 
+	
 	@Override
 	public int compareTo(Register r) {
 		return r.frequency - this.frequency;
