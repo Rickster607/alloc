@@ -108,7 +108,15 @@ public class Allocator {
 					}
 				}
 			}
-
+			
+			/* These next two commands (and their following assignments and references) are used SOLELY for an edge case
+			 * that occurs when a value is "load"ed into a register whose first and LAST use are the same instruction
+			 * ("dead" register whose value will never be used). In this case, specifically for report2.i instruction #42
+			 * load r49 => r5, when virtual register r5 is allocated to physical register r1, and r1 is also used as the 
+			 * target of the next add instruction, the output of allocatedReport2.i is off for some reason. I found that 
+			 * using r1 as the source of a storeAI instruction is a workaround for this bug, and I coded that in unless I 
+			 * can find a more suitable solution before the deadline.  
+			 */
 			Boolean needToSpill = false;
 			Instruction spillCode = null;
 			//allocate registers
@@ -484,6 +492,7 @@ public class Allocator {
 			System.out.println("Error, not enough registers to properly allocate block.");
 			return;
 		}
+		final long startTime = System.currentTimeMillis();
 		registersRemaining = numRegisters;
 		allocatorType = args[1].toLowerCase().charAt(0);
 		filename = args[2];
@@ -498,22 +507,25 @@ public class Allocator {
 		spilledRegisters = new ArrayList<Register>();
 		parseBlock();
 		Instruction.calculateMaxLive(block);
-		
+		long endTime = 0;
 		switch (allocatorType) {
 			case 'b':
 				bottomUp();
+				endTime = System.currentTimeMillis();
 				Instruction.printILOC(allocated);
 //				Instruction.printILOCtoFile(allocated);
 				break;
 			case 's':
 				registersRemaining = numRegisters - 2;
 				simpleTopDown();
+				endTime = System.currentTimeMillis();
 				Instruction.printILOC(spilledBlock);
 //				Instruction.printILOCtoFile(spilledBlock);
 				break;
 			case 't':
 				registersRemaining = numRegisters - 2;
 				topDown();
+				endTime = System.currentTimeMillis();
 				Instruction.printILOC(spilledBlock);
 //				Instruction.printILOCtoFile(spilledBlock);
 				break;
@@ -526,6 +538,7 @@ public class Allocator {
 				System.out.println("Error, please enter a valid allocator type.");
 				break;
 		}
+		System.out.println("// Total elapsed time: " + (endTime - startTime) + "ms");
 		return;
 	}
 }
