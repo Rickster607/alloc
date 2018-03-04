@@ -86,3 +86,10 @@ determined in the very beginning and never change, even after their live ranges
 have expired. In the TopDown allocator, those Registers will be removed from the 
 physicalRegisters array and new Registers will take their place (based on the 
 given spilling heuristic).
+Additionally, my TopDown allocator (which was the first allocator I wrote) does 
+not reassign the register numbers in the Instructions to reflect r1, r2, ..., rn 
+where (n+2) is the number of physical registers to allocate, and the two feasible 
+registers used are not r(n) and r(n-1), but instead r255 and r254. This does not 
+affect the intended result of the program; there are no more than n registers 
+"live" at any point in the ILOC code output to stdout, so the desired operation 
+is achieved.
