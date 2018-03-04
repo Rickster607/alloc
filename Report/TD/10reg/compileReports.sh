@@ -11,5 +11,3 @@ for i in `seq 1 6`;
 		mv output1.txt allocReport$i.i
 	done
 
-#java -jar alloc.jar $n $t ../../report1.i
-#mv output1.txt allocReport1.i
