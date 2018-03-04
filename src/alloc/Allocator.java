@@ -146,16 +146,15 @@ public class Allocator {
 				allocated.add(spillCode);
 			}
 		}
-		Instruction.printILOCtoFile(allocated);			//DON'T FORGET TO REMOVE THIS WHEN YOU'RE DONE
 		return;
 	}
 
+	
 	public static void simpleTopDown() {
 		determineSpilledRegsSTD();
 		spillRegistersSTD();
 		loadSpilledRegsSTD();
 		allocateRegistersSTD();
-		Instruction.printILOCtoFile(spilledBlock);
 		return;
 	}
 	
@@ -166,7 +165,6 @@ public class Allocator {
 		spillRegistersTD();
 		loadSpilledRegsTD();
 		allocateRegistersTD();
-		Instruction.printILOCtoFile(spilledBlock);
 		return;
 	}
 	
@@ -503,14 +501,20 @@ public class Allocator {
 		switch (allocatorType) {
 			case 'b':
 				bottomUp();
+				Instruction.printILOC(allocated);
+				Instruction.printILOCtoFile(allocated);
 				break;
 			case 's':
 				registersRemaining = numRegisters - 2;
 				simpleTopDown();
+				Instruction.printILOC(spilledBlock);
+				Instruction.printILOCtoFile(spilledBlock);
 				break;
 			case 't':
 				registersRemaining = numRegisters - 2;
 				topDown();
+				Instruction.printILOC(spilledBlock);
+				Instruction.printILOCtoFile(spilledBlock);
 				break;
 			case 'o':
 				break;
